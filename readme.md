@@ -2,8 +2,9 @@
 
 Le fichier `stand.php` est une bibliothèque PHP complète pour faciliter la gestion des bases de données et des sessions. Voici une documentation détaillée des fonctionnalités disponibles dans ce fichier.
 
-> [!MPORTANT]  
->Télécharger d'abord le fichier et incluez le dans votre  projet
+> [!IMPORTANT]  
+> Télécharger d'abord le fichier et incluez le dans votre  projet.
+
 ```php
 require_once 'stand.php';
 ```
@@ -192,7 +193,7 @@ if (Exists('users', ['email' => 'john@example.com'], $conn)) {
 
 `exemple:`
 ```php
-$count = CountRecords('users', $conn, ['status' => 'active']);
+$count = Count('users', $conn, ['status' => 'active']);
 ```
 
 #### Recherche avec LIKE
