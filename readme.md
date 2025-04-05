@@ -192,7 +192,7 @@ if (Exists('users', ['email' => 'john@example.com'], $conn)) {
 
 `exemple:`
 ```php
-$count = Count('users', $conn, ['status' => 'active']);
+$count = CountRecords('users', $conn, ['status' => 'active']);
 ```
 
 #### Recherche avec LIKE
