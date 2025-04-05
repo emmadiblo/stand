@@ -1,10 +1,9 @@
 <?php
 
 /**
- * Bibliothèque de fonctions pour la gestion de bases de données et de sessions.
+ * Bibliothèque php de fonctions pour la gestion de bases de données et de sessions.
  * 
  * @author Emmadiblo
- * https://github.com/emmadiblo
  * @version 1.0.0
  */
 
@@ -28,7 +27,7 @@ function ConnDB(
     string $username, 
     string $password, 
     string $database, 
-    string $connType = 'pdo', 
+    string $connType = 'PDO', 
     array $options = []
 ): mysqli|PDO {
     if ($connType === 'mysqli') {
@@ -45,11 +44,13 @@ function ConnDB(
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
-                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci"
             ];
             
             // Fusionner avec les options utilisateur
             $pdoOptions = array_merge($defaultOptions, $options);
+            
+            // Ajouter l'initialisation des caractères
+            $pdoOptions[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci";
             
             $conn = new PDO("mysql:host=$host;dbname=$database;charset=utf8mb4", $username, $password, $pdoOptions);
             return $conn;
@@ -60,6 +61,8 @@ function ConnDB(
         throw new Exception("Type de connexion invalide : " . $connType);
     }
 }
+
+
 
 /**
  * Exécute une requête SQL personnalisée.
@@ -77,9 +80,10 @@ function Query(
     string $sql, 
     array $params = [], 
     mysqli|PDO $conn, 
-    string $connType, 
     bool $fetchAll = true
 ): mixed {
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
+
     if ($connType === 'mysqli') {
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
@@ -166,13 +170,15 @@ function Query(
  * @param string $table Nom de la table.
  * @param array $data Tableau associatif des données à insérer (clé => valeur).
  * @param mysqli|PDO $conn Instance de connexion à la base de données.
- * @param string $connType Type de connexion ('mysqli'ou 'PDO').
  *
  * @return int|string Identifiant de la ligne insérée.
  * @throws Exception Si le type de connexion n'est pas valide ou en cas d'erreur.
  */
-function Insert(string $table, array $data, mysqli|PDO $conn, string $connType): int|string
+function Insert(string $table, array $data, mysqli|PDO $conn): int|string
 {
+
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
+
     if (empty($data)) {
         throw new Exception("Aucune donnée fournie pour l'insertion");
     }
@@ -235,7 +241,6 @@ function Insert(string $table, array $data, mysqli|PDO $conn, string $connType):
  *
  * @param string $table Nom de la table.
  * @param mysqli|PDO $conn Instance de connexion à la base de données.
- * @param string $connType Type de connexion ('mysqli'ou 'PDO').
  * @param array|null $where Tableau associatif des conditions WHERE (clé => valeur), ou null pour sélectionner toutes les lignes.
  * @param string|array|null $columns Colonnes à sélectionner (séparées par des virgules ou tableau), null pour toutes.
  * @param string|null $orderBy Clause ORDER BY (ex: "id DESC").
@@ -248,13 +253,15 @@ function Insert(string $table, array $data, mysqli|PDO $conn, string $connType):
 function Select(
     string $table, 
     mysqli|PDO $conn, 
-    string $connType, 
     ?array $where = null, 
     string|array|null $columns = null, 
     ?string $orderBy = null, 
     ?int $limit = null, 
     ?int $offset = null
 ): array|false {
+
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
+
     // Définition des colonnes à sélectionner
     if ($columns === null) {
         $columnsStr = "*";
@@ -297,7 +304,7 @@ function Select(
         }
 
         try {
-            return Query($sql, $params, $conn, $connType, true);
+            return Query($sql, $params, $conn,  true);
         } catch (Exception $e) {
             throw new Exception("Erreur de sélection : " . $e->getMessage());
         }
@@ -349,7 +356,6 @@ function Select(
  *
  * @param string $table Nom de la table.
  * @param mysqli|PDO $conn Instance de connexion à la base de données.
- * @param string $connType Type de connexion ('mysqli'ou 'PDO').
  * @param array $where Tableau associatif des conditions WHERE (clé => valeur).
  * @param string|array|null $columns Colonnes à sélectionner (séparées par des virgules ou tableau), null pour toutes.
  *
@@ -359,10 +365,11 @@ function Select(
 function SelectOne(
     string $table, 
     mysqli|PDO $conn, 
-    string $connType, 
     array $where, 
     string|array|null $columns = null
 ): ?array {
+
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
     // Définition des colonnes à sélectionner
     if ($columns === null) {
         $columnsStr = "*";
@@ -391,7 +398,7 @@ function SelectOne(
         $sql .= " LIMIT 1";
 
         try {
-            $result = Query($sql, $params, $conn, $connType, false);
+            $result = Query($sql, $params, $conn,  false);
             return $result ?: null;
         } catch (Exception $e) {
             throw new Exception("Erreur de sélection : " . $e->getMessage());
@@ -433,13 +440,14 @@ function SelectOne(
  * @param array $data Tableau associatif des données à mettre à jour (clé => valeur).
  * @param array $where Tableau associatif des conditions WHERE (clé => valeur).
  * @param mysqli|PDO $conn Instance de connexion à la base de données.
- * @param string $connType Type de connexion ('mysqli'ou 'PDO').
  *
  * @return int Nombre de lignes affectées.
  * @throws Exception Si le type de connexion n'est pas valide ou en cas d'erreur.
  */
-function Update(string $table, array $data, array $where, mysqli|PDO $conn, string $connType): int
+function Update(string $table, array $data, array $where, mysqli|PDO $conn): int
 {
+
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
     if (empty($data)) {
         throw new Exception("Aucune donnée fournie pour la mise à jour");
     }
@@ -527,13 +535,14 @@ function Update(string $table, array $data, array $where, mysqli|PDO $conn, stri
  * @param string $table Nom de la table.
  * @param array $data Tableau associatif des données à mettre à jour (clé => valeur).
  * @param mysqli|PDO $conn Instance de connexion à la base de données.
- * @param string $connType Type de connexion ('mysqli'ou 'PDO').
  *
  * @return int Nombre de lignes affectées.
  * @throws Exception Si le type de connexion n'est pas valide ou en cas d'erreur.
  */
-function UpdateAll(string $table, array $data, mysqli|PDO $conn, string $connType): int
+function UpdateAll(string $table, array $data, mysqli|PDO $conn, ): int
 {
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
+
     if (empty($data)) {
         throw new Exception("Aucune donnée fournie pour la mise à jour");
     }
@@ -597,13 +606,13 @@ function UpdateAll(string $table, array $data, mysqli|PDO $conn, string $connTyp
  * @param string $table Nom de la table.
  * @param array $where Tableau associatif des conditions WHERE (clé => valeur).
  * @param mysqli|PDO $conn Instance de connexion à la base de données.
- * @param string $connType Type de connexion ('mysqli'ou 'PDO').
- *
+ 
  * @return int Nombre de lignes supprimées.
  * @throws Exception Si le type de connexion n'est pas valide, si aucune condition WHERE n'est fournie, ou en cas d'erreur.
  */
-function Delete(string $table, array $where, mysqli|PDO $conn, string $connType): int
+function Delete(string $table, array $where, mysqli|PDO $conn): int
 {
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
     if (empty($where)) {
         throw new Exception("Aucune condition WHERE fournie pour la suppression. Utilisez DeleteAll() pour supprimer toutes les lignes.");
     }
@@ -666,14 +675,14 @@ function Delete(string $table, array $where, mysqli|PDO $conn, string $connType)
  *
  * @param string $table Nom de la table.
  * @param mysqli|PDO $conn Instance de connexion à la base de données.
- * @param string $connType Type de connexion ('mysqli'ou 'PDO').
  * @param bool $confirm Confirmation explicite requise pour éviter les suppressions accidentelles.
  *
  * @return int Nombre de lignes supprimées.
  * @throws Exception Si le type de connexion n'est pas valide, si la confirmation n'est pas fournie, ou en cas d'erreur.
  */
-function DeleteAll(string $table, mysqli|PDO $conn, string $connType, bool $confirm = false): int
+function DeleteAll(string $table, mysqli|PDO $conn, bool $confirm = false): int
 {
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
     if (!$confirm) {
         throw new Exception("Confirmation requise pour supprimer toutes les lignes. Définissez le paramètre \$confirm à true.");
     }
@@ -713,13 +722,12 @@ function DeleteAll(string $table, mysqli|PDO $conn, string $connType, bool $conf
  * @param string $table Nom de la table.
  * @param array $where Tableau associatif des conditions WHERE (clé => valeur).
  * @param mysqli|PDO $conn Instance de connexion à la base de données.
- * @param string $connType Type de connexion ('mysqli'ou 'PDO').
- *
  * @return bool True si l'enregistrement existe, false sinon.
  * @throws Exception Si le type de connexion n'est pas valide ou en cas d'erreur.
  */
-function Exists(string $table, array $where, mysqli|PDO $conn, string $connType): bool
+function Exists(string $table, array $where, mysqli|PDO $conn): bool
 {
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
     if (empty($where)) {
         throw new Exception("Aucune condition WHERE fournie pour la vérification d'existence.");
     }
@@ -783,14 +791,14 @@ function Exists(string $table, array $where, mysqli|PDO $conn, string $connType)
  *
  * @param string $table Nom de la table.
  * @param mysqli|PDO $conn Instance de connexion à la base de données.
- * @param string $connType Type de connexion ('mysqli'ou 'PDO').
  * @param array|null $where Tableau associatif des conditions WHERE (clé => valeur), ou null pour compter toutes les lignes.
  *
  * @return int Nombre d'enregistrements.
  * @throws Exception Si le type de connexion n'est pas valide ou en cas d'erreur.
  */
-function CountRecords(string $table, mysqli|PDO $conn, string $connType, ?array $where = null): int
+function CountRecords(string $table, mysqli|PDO $conn, string  ?array $where = null): int
 {
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
     if ($connType === 'mysqli') {
         $sql = "SELECT COUNT(*) as count FROM " . $conn->real_escape_string($table);
         $params = [];
@@ -886,13 +894,12 @@ function BeginTransaction(mysqli|PDO $conn, string $connType): bool
  * Valide une transaction.
  *
  * @param mysqli|PDO $conn Instance de connexion à la base de données.
- * @param string $connType Type de connexion ('mysqli'ou 'PDO').
- * 
  * @return bool True si la transaction a été validée avec succès, false sinon.
  * @throws Exception Si le type de connexion n'est pas valide.
  */
-function CommitTransaction(mysqli|PDO $conn, string $connType): bool
+function CommitTransaction(mysqli|PDO $conn): bool
 {
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
     if ($connType === 'mysqli') {
         return $conn->commit();
     } elseif ($connType === 'PDO') {
@@ -906,13 +913,13 @@ function CommitTransaction(mysqli|PDO $conn, string $connType): bool
  * Annule une transaction.
  *
  * @param mysqli|PDO $conn Instance de connexion à la base de données.
- * @param string $connType Type de connexion ('mysqli'ou 'PDO').
- * 
+
  * @return bool True si la transaction a été annulée avec succès, false sinon.
  * @throws Exception Si le type de connexion n'est pas valide.
  */
-function RollbackTransaction(mysqli|PDO $conn, string $connType): bool
+function RollbackTransaction(mysqli|PDO $conn): bool
 {
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
     if ($connType === 'mysqli') {
         return $conn->rollback();
     } elseif ($connType === 'PDO') {
@@ -926,14 +933,14 @@ function RollbackTransaction(mysqli|PDO $conn, string $connType): bool
  * Obtient le dernier ID inséré.
  *
  * @param mysqli|PDO $conn Instance de connexion à la base de données.
- * @param string $connType Type de connexion ('mysqli'ou 'PDO').
  * @param string|null $name Nom de la séquence (uniquement pour PDO).
  * 
  * @return int|string Dernier ID inséré.
  * @throws Exception Si le type de connexion n'est pas valide.
  */
-function LastInsertId(mysqli|PDO $conn, string $connType, ?string $name = null): int|string
+function LastInsertId(mysqli|PDO $conn, string  ?string $name = null): int|string
 {
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
     if ($connType === 'mysqli') {
         return $conn->insert_id;
     } elseif ($connType === 'PDO') {
@@ -948,7 +955,6 @@ function LastInsertId(mysqli|PDO $conn, string $connType, ?string $name = null):
  *
  * @param string $table Nom de la table.
  * @param mysqli|PDO $conn Instance de connexion à la base de données.
- * @param string $connType Type de connexion ('mysqli'ou 'PDO').
  * @param int $page Numéro de la page (commence à 1).
  * @param int $perPage Nombre d'éléments par page.
  * @param array|null $where Tableau associatif des conditions WHERE (clé => valeur), ou null pour sélectionner toutes les lignes.
@@ -961,13 +967,14 @@ function LastInsertId(mysqli|PDO $conn, string $connType, ?string $name = null):
 function Paginate(
     string $table, 
     mysqli|PDO $conn, 
-    string $connType, 
     int $page = 1, 
     int $perPage = 10, 
     ?array $where = null, 
     string|array|null $columns = null, 
     ?string $orderBy = null
 ): array {
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
+
     // Vérifie que la page est au moins 1
     $page = max(1, $page);
     
@@ -975,10 +982,10 @@ function Paginate(
     $offset = ($page - 1) * $perPage;
     
     // Récupère les données
-    $data = Select($table, $conn, $connType, $where, $columns, $orderBy, $perPage, $offset);
+    $data = Select($table, $conn, $where, $columns, $orderBy, $perPage, $offset);
     
     // Compte le nombre total d'enregistrements
-    $total = CountRecords($table, $conn, $connType, $where);
+    $total = CountRecords($table, $conn,  $where);
     
     // Calcule le nombre total de pages
     $totalPages = ceil($total / $perPage);
@@ -1004,13 +1011,13 @@ function Paginate(
  *
  * @param string $string Chaîne à sécuriser.
  * @param mysqli|PDO $conn Instance de connexion à la base de données.
- * @param string $connType Type de connexion ('mysqli'ou 'PDO').
  * 
  * @return string Chaîne sécurisée.
  * @throws Exception Si le type de connexion n'est pas valide.
  */
-function EscapeString(string $string, mysqli|PDO $conn, string $connType): string
+function EscapeString(string $string, mysqli|PDO $conn): string
 {
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
     if ($connType === 'mysqli') {
         return $conn->real_escape_string($string);
     } elseif ($connType === 'PDO') {
@@ -1025,13 +1032,13 @@ function EscapeString(string $string, mysqli|PDO $conn, string $connType): strin
  *
  * @param string $table Nom de la table.
  * @param mysqli|PDO $conn Instance de connexion à la base de données.
- * @param string $connType Type de connexion ('mysqli'ou 'PDO').
- * 
+ 
  * @return array Tableau contenant les informations sur les colonnes.
  * @throws Exception Si le type de connexion n'est pas valide ou en cas d'erreur.
  */
 function GetColumns(string $table, mysqli|PDO $conn, string $connType): array
 {
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
     if ($connType === 'mysqli') {
         $sql = "SHOW COLUMNS FROM " . $conn->real_escape_string($table);
         $stmt = $conn->prepare($sql);
@@ -1071,7 +1078,6 @@ function GetColumns(string $table, mysqli|PDO $conn, string $connType): array
  * @param string $table Nom de la table.
  * @param array $likeColumns Tableau associatif des colonnes pour la clause LIKE (colonne => valeur).
  * @param mysqli|PDO $conn Instance de connexion à la base de données.
- * @param string $connType Type de connexion ('mysqli'ou 'PDO').
  * @param string|array|null $columns Colonnes à sélectionner (séparées par des virgules ou tableau), null pour toutes.
  * @param string $operator Opérateur de liaison entre les clauses LIKE ('AND' ou 'OR').
  * @param string|null $orderBy Clause ORDER BY (ex: "id DESC").
@@ -1084,14 +1090,15 @@ function GetColumns(string $table, mysqli|PDO $conn, string $connType): array
 function SearchLike(
     string $table, 
     array $likeColumns, 
-    mysqli|PDO $conn, 
-    string $connType, 
+    mysqli|PDO $conn,  
     string|array|null $columns = null, 
     string $operator = 'OR', 
     ?string $orderBy = null, 
     ?int $limit = null, 
     ?int $offset = null
 ): array {
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
+
     // Définition des colonnes à sélectionner
     if ($columns === null) {
         $columnsStr = "*";
@@ -1139,7 +1146,7 @@ function SearchLike(
             }
         }
         
-        return Query($sql, $params, $conn, $connType, true);
+        return Query($sql, $params, $conn, true);
         
     } elseif ($connType === 'PDO') {
         $sql = "SELECT $columnsStr FROM $table";
@@ -1191,29 +1198,28 @@ function SearchLike(
  * @param array $data Tableau associatif des données à insérer ou mettre à jour (clé => valeur).
  * @param array $uniqueKeys Tableau des clés uniques pour identifier l'enregistrement existant.
  * @param mysqli|PDO $conn Instance de connexion à la base de données.
- * @param string $connType Type de connexion ('mysqli'ou 'PDO').
- * 
  * @return int|string ID de l'enregistrement inséré ou mis à jour.
  * @throws Exception Si le type de connexion n'est pas valide ou en cas d'erreur.
  */
-function Upsert(string $table, array $data, array $uniqueKeys, mysqli|PDO $conn, string $connType): int|string
+function Upsert(string $table, array $data, array $uniqueKeys, mysqli|PDO $conn): int|string
 {
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
     // Vérifie si l'enregistrement existe
     $where = array_intersect_key($data, array_flip($uniqueKeys));
     if (empty($where)) {
         throw new Exception("Les clés uniques spécifiées ne correspondent à aucune clé dans les données.");
     }
     
-    if (Exists($table, $where, $conn, $connType)) {
+    if (Exists($table, $where, $conn)) {
         // Mise à jour
-        Update($table, $data, $where, $conn, $connType);
+        Update($table, $data, $where, $conn);
         
         // Récupère l'ID de l'enregistrement
-        $result = SelectOne($table, $conn, $connType, $where, 'id');
+        $result = SelectOne($table, $conn, $where, 'id');
         return $result ? $result['id'] : 0;
     } else {
         // Insertion
-        return Insert($table, $data, $conn, $connType);
+        return Insert($table, $data, $conn);
     }
 }
 
@@ -1235,8 +1241,9 @@ function InsertOrUpdate(
     array $data, 
     ?array $updateData = null, 
     mysqli|PDO $conn, 
-    string $connType
 ): int|string {
+    $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
+    // Vérifie que les données sont fournies
     if (empty($data)) {
         throw new Exception("Aucune donnée fournie pour l'insertion ou la mise à jour");
     }
