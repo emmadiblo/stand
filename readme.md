@@ -1,6 +1,6 @@
 # Explication sur l'utilisation de `stand.php`
 
-`stand.php` est une bibliothèque PHP complète pour faciliter la gestion des bases de données et des sessions. Voici une documentation détaillée des fonctionnalités disponibles dans ce fichier.
+Le fichier `stand.php` est une bibliothèque PHP complète pour faciliter la gestion des bases de données et des sessions. Voici une documentation détaillée des fonctionnalités disponibles dans ce fichier.
 
 ## Table des matières
 
@@ -27,9 +27,11 @@
 
 ### Connexion à la base de données avec  `ConnDB()`
 
+La fonction `ConnDB()` permet d'établir une connexion à la base de données en supportant à la fois `MySQLi` et `PDO`.
+
 #### syntaxe
 ```php
-$conn = ConnDB('host', 'username', 'password', 'database', 'connType');
+$variable = ConnDB('host', 'username', 'password', 'database', 'connType');
 ```
 #### Options
 - `host`: Adresse de l'hôte de la base de données
@@ -44,19 +46,32 @@ $conn = ConnDB('host', 'username', 'password', 'database', 'connType');
 $conn = ConnDB('localhost', 'root', '', 'contacts', 'mysqli');
 ```
 
-La fonction `ConnDB()` permet d'établir une connexion à la base de données en supportant à la fois `MySQLi` et `PDO`.
 
 
 
 
-### Requêtes SQL
+
+### Executer les requetes SQL avec la fonction `Query()` 
+
+La fonction `Query()` exécute une requête SQL personnalisée avec des paramètres.
+
+`syntaxe`
+```php
+$variable = Query("requete", [parametres], $conn, 'connType');
+```
+
+#### Options
+- `requete`: Requete SQL
+- `parametres`: Parametres d'une requete
+- `$conn`: Variable de connexion à la base de données
+- `connType`: Type de connexion ('mysqli' ou 'PDO', par défaut 'PDO')
 
 `exemple`
 ```php
 $results = Query("SELECT * FROM users WHERE age > ?", [18], $conn, 'PDO');
 ```
 
-La fonction `Query()` exécute une requête SQL personnalisée avec des paramètres.
+
 
 ### Opérations CRUD
 
