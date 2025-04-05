@@ -1036,7 +1036,7 @@ function EscapeString(string $string, mysqli|PDO $conn): string
  * @return array Tableau contenant les informations sur les colonnes.
  * @throws Exception Si le type de connexion n'est pas valide ou en cas d'erreur.
  */
-function GetColumns(string $table, mysqli|PDO $conn, string $connType): array
+function GetColumns(string $table, mysqli|PDO $conn): array
 {
     $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
     if ($connType === 'mysqli') {
