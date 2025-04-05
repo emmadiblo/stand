@@ -796,7 +796,7 @@ function Exists(string $table, array $where, mysqli|PDO $conn): bool
  * @return int Nombre d'enregistrements.
  * @throws Exception Si le type de connexion n'est pas valide ou en cas d'erreur.
  */
-function CountRecords(string $table, mysqli|PDO $conn, string  ?array $where = null): int
+function CountRecords(string $table, mysqli|PDO $conn, ?array $where = null): int
 {
     $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
     if ($connType === 'mysqli') {
@@ -938,7 +938,7 @@ function RollbackTransaction(mysqli|PDO $conn): bool
  * @return int|string Dernier ID inséré.
  * @throws Exception Si le type de connexion n'est pas valide.
  */
-function LastInsertId(mysqli|PDO $conn, string  ?string $name = null): int|string
+function LastInsertId(mysqli|PDO $conn, ?string $name = null): int|string
 {
     $connType = (get_class( $conn) === 'mysqli') ? 'mysqli' : 'PDO';
     if ($connType === 'mysqli') {
