@@ -2,6 +2,11 @@
 
 Le fichier `stand.php` est une bibliothèque PHP complète pour faciliter la gestion des bases de données et des sessions. Voici une documentation détaillée des fonctionnalités disponibles dans ce fichier.
 
+> [!MPORTANT]  
+>Télécharger d'abord le fichier et incluez le dans votre  projet
+```php
+require_once 'stand.php';
+```
 ## Table des matières
 
 1. [Gestion de bases de données](#gestion-de-bases-de-données)
@@ -33,6 +38,7 @@ La fonction `ConnDB()` permet d'établir une connexion à la base de données en
 ```php
 $variable = ConnDB('host', 'username', 'password', 'database', 'connType');
 ```
+
 #### Options
 - `host`: Adresse de l'hôte de la base de données
 - `username`: Nom d'utilisateur
@@ -47,104 +53,124 @@ $conn = ConnDB('localhost', 'root', '', 'contacts', 'mysqli');
 ```
 
 
-
-
-
-
 ### Executer les requetes SQL avec la fonction `Query()` 
 
 La fonction `Query()` exécute une requête SQL personnalisée avec des paramètres.
 
-`syntaxe`
+`syntaxe:`
 ```php
-$variable = Query("requete", [parametres], $conn, 'connType');
+$variable = Query("requete", [parametres], $conn);
 ```
 
 #### Options
 - `requete`: Requete SQL
 - `parametres`: Parametres d'une requete
 - `$conn`: Variable de connexion à la base de données
-- `connType`: Type de connexion ('mysqli' ou 'PDO', par défaut 'PDO')
 
-`exemple`
+
+`exemple:`
 ```php
-$results = Query("SELECT * FROM users WHERE age > ?", [18], $conn, 'PDO');
+$results = Query("SELECT * FROM contacts WHERE id = ?", [1], $connexion);
 ```
 
+`exemple avec plus d'un paramètre:`
+```php
+$results = Query("SELECT * FROM contacts WHERE id = ? and nom = ?", [1,'uwizeyimana'], $connexion);
+if ($results) {
+    foreach ($results as $row) {
+        echo "ID: " . $row['id'] . " - Name: " . $row['nom'] . "<br>";
+    }
+} else {
+    echo "Aucun résultat trouvé.";
+}
+```
 
 
 ### Opérations CRUD
 
-#### Insertion
+#### Insertion avec Insert() 
 
-`exemple`
+La fonction `Insert()`permet d'inserer des données dans la bse de données.
+
+`syntaxe:`
+```php
+$variable = Insert('table', [data], $conn);
+```
+
+#### Options
+- `table`:  Nom de la table
+- `data`:  Tableau associatif des données à insérer (clé => valeur).
+- `$conn`: Variable de connexion à la base de données
+
+`exemple:`
 ```php
 $userId = Insert('users', [
-    'username' => 'john_doe',
-    'email' => 'john@example.com',
+    'username' => 'emmadiblo',
+    'email' => 'emmadiblo@gmail.com',
     'password' => HashPassword('secure_password')
-], $conn, 'PDO');
+], $conn);
 ```
+
+
 
 #### Sélection
 
-`exemple`
+`exemple:`
 ```php
 // Sélectionner plusieurs lignes
-$users = Select('users', $conn, 'PDO', ['status' => 'active'], 'id, username, email', 'username ASC', 10, 0);
+$users = Select('users', $conn, ['status' => 'active'], 'id, username, email', 'username ASC', 10, 0);
 
 // Sélectionner une seule ligne
-$user = SelectOne('users', $conn, 'PDO', ['id' => 123]);
+$user = SelectOne('users', $conn, ['id' => 123]);
 ```
 
 #### Mise à jour
 
-`exemple`
+`exemple:`
 ```php
 // Mettre à jour avec condition
 $affected = Update('users', 
     ['status' => 'inactive'], 
     ['id' => 123], 
-    $conn, 
-    'PDO'
+    $conn
 );
 
 // Mettre à jour toutes les lignes
-$affected = UpdateAll('users', ['status' => 'pending'], $conn, 'PDO');
+$affected = UpdateAll('users', ['status' => 'pending'], $conn);
 ```
 
 #### Suppression
 
-`exemple`
+`exemple:`
 ```php
 // Supprimer avec condition
-$affected = Delete('users', ['id' => 123], $conn, 'PDO');
+$affected = Delete('users', ['id' => 123], $conn);
 
 // Supprimer toutes les lignes (avec confirmation obligatoire)
-$affected = DeleteAll('users', $conn, 'PDO', true);
+$affected = DeleteAll('users', $conn, true);
 ```
 
 ### Transactions
 
-`exemple`
+`exemple:`
 ```php
-BeginTransaction($conn, 'PDO');
+BeginTransaction($conn);
 
 try {
     // Opérations sur la base de données...
     
-    CommitTransaction($conn, 'PDO');
+    CommitTransaction($conn);
 } catch (Exception $e) {
-    RollbackTransaction($conn, 'PDO');
+    RollbackTransaction($conn);
     // Gestion de l'erreur...
 }
 ```
 
 ### Pagination
 
-`exemple`
+`exemple:`
 ```php
-$result = Paginate('articles', $conn, 'PDO', 2, 10, ['status' => 'published']);
+$result = Paginate('articles', $conn, 2, 10, ['status' => 'published']);
 
 // $result contient 'data' (les articles) et 'pagination' (informations sur la pagination)
 $articles = $result['data'];
@@ -155,28 +181,27 @@ $pagination = $result['pagination'];
 
 #### Vérifier l'existence d'un enregistrement
 
-`exemple`
+`exemple:`
 ```php
-if (Exists('users', ['email' => 'john@example.com'], $conn, 'PDO')) {
+if (Exists('users', ['email' => 'john@example.com'], $conn)) {
     // L'utilisateur existe déjà
 }
 ```
 
 #### Comptage
 
-`exemple`
+`exemple:`
 ```php
-$count = Count('users', $conn, 'PDO', ['status' => 'active']);
+$count = Count('users', $conn, ['status' => 'active']);
 ```
 
 #### Recherche avec LIKE
 
-`exemple`
+`exemple:`
 ```php
 $results = SearchLike('users', 
     ['username' => 'john', 'email' => 'example'], 
-    $conn, 
-    'PDO', 
+    $conn,  
     'id, username, email', 
     'OR'
 );
@@ -184,25 +209,23 @@ $results = SearchLike('users',
 
 #### Upsert (Insert ou Update)
 
-`exemple`
+`exemple:`
 ```php
 $id = Upsert('users', 
     ['email' => 'john@example.com', 'username' => 'john_doe', 'last_login' => date('Y-m-d H:i:s')], 
     ['email'], 
-    $conn, 
-    'PDO'
+    $conn
 );
 ```
 
 #### Insert ou Update (MySQL)
 
-`exemple`
+`exemple:`
 ```php
 $result = InsertOrUpdate('users', 
     ['email' => 'john@example.com', 'username' => 'john_doe', 'status' => 'active'], 
     null, 
-    $conn, 
-    'PDO'
+    $conn
 );
 ```
 
@@ -210,7 +233,7 @@ $result = InsertOrUpdate('users',
 
 ### Initialisation et destruction
 
-`exemple`
+`exemple:`
 ```php
 // Initialiser une session sécurisée
 InitSession([
@@ -227,7 +250,7 @@ DestroySession();
 
 ### Manipulation des données de session
 
-`exemple`
+`exemple:`
 ```php
 // Définir une valeur
 SetSession('user_id', 123);
@@ -249,7 +272,7 @@ ClearSession();
 
 ### Messages flash
 
-`exemple`
+`exemple:`
 ```php
 // Définir un message flash
 SetFlash('success', 'Votre profil a été mis à jour avec succès.');
@@ -270,14 +293,14 @@ foreach ($flashMessages as $flash) {
 
 ### Sanitization
 
-`exemple`
+`exemple:`
 ```php
 $cleanData = Sanitize($_POST);
 ```
 
 ### Protection CSRF
 
-`exemple`
+`exemple:`
 ```php
 // Dans le formulaire
 $token = GenerateCsrfToken('user_form');
@@ -296,7 +319,7 @@ CleanExpiredCsrfTokens();
 
 ### Gestion des mots de passe
 
-`exemple`
+`exemple:`
 ```php
 // Hacher un mot de passe
 $hashedPassword = HashPassword('secure_password');
@@ -315,7 +338,7 @@ if (PasswordNeedsRehash($hashedPassword)) {
 
 ### Génération de jetons
 
-`exemple`
+`exemple:`
 ```php
 // Générer un UUID
 $uuid = GenerateUUID();
